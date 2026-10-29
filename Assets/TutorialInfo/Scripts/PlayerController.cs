@@ -1,0 +1,89 @@
+using UnityEngine;
+
+/// <summary>
+/// STARTER — Player controller for the "Orb Collector" lab goal.
+/// Attach to a cube named "Player" (add a Rigidbody, freeze rotation X/Z).
+///
+/// ALREADY WORKS: WASD movement with GetKey + GetAxis, frame-rate independent
+/// via Time.deltaTime. A Debug.Log heartbeat proves Update runs every frame.
+///
+/// YOUR LAB TASKS live in the TODO comments. Each TODO uses one function
+/// from this week's lecture. Complete them all to finish the game.
+/// </summary>
+public class PlayerController : MonoBehaviour
+{
+    [Header("Movement")]
+    [SerializeField] private float moveSpeed = 6f;
+
+    [Header("Lab wiring")]
+    [SerializeField] private GameObject orbPrefab;   // TODO 5: used to spawn a bonus orb
+
+    private Rigidbody rb;
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
+
+    void Start()
+    {
+        Debug.Log("[PlayerController] Ready. Collect all orbs to win.");
+    }
+
+    void Update()
+    {
+        HandleMovement();
+    }
+
+    private void HandleMovement()
+    {
+#if ENABLE_LEGACY_INPUT_MANAGER
+        float h = Input.GetAxis("Horizontal"); // A/D + arrows
+        float v = Input.GetAxis("Vertical");   // W/S + arrows
+
+        Vector3 movement = new Vector3(h, 0f, v).normalized;
+
+        // Time.deltaTime makes speed identical at any frame rate (10 FPS or 144 FPS).
+        transform.Translate(movement * moveSpeed * Time.deltaTime, Space.World);
+#else
+        Debug.LogWarning("[PlayerController] Legacy input is disabled (new Input System active). To run this demo: Project Settings → Input → Input Manager Mode → Old Input Manager, then rebuild.");
+#endif
+    }
+
+    // ---------------------------------------------------------------
+    // TODO 1 (OnCollisionEnter): log the name of any wall you bump.
+    // TODO 2 (OnTriggerEnter): if other.CompareTag("Orb"), Destroy the orb
+    //       and Debug.Log the collection. (Orb prefab already tagged "Orb".)
+    // TODO 3 (LateUpdate) is implemented by CameraFollow.cs.
+    // TODO 4 (OnMouseDrag) is implemented by Orb.cs.
+    // TODO 5 (OnDestroy): when the Player is destroyed, Instantiate one
+    //       bonus orbPrefab at your last position.
+    // ---------------------------------------------------------------
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        Debug.Log($"[PlayerController] Bumped into {collision.gameObject.name}.");
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Orb"))
+        {
+            Destroy(other.gameObject);
+            Debug.Log($"[PlayerController] Collected {other.gameObject.name}.");
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.Collect();
+            }
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (orbPrefab != null)
+        {
+            Instantiate(orbPrefab, transform.position, Quaternion.identity);
+        }
+    }
+}
